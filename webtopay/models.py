@@ -2,7 +2,9 @@
 
 from django.db import models
 
-class WebToPayCallback(models.Model):
+class WebToPayResponse(models.Model):
+    # The thing we got from server
+    query = models.TextField(blank=True)
 
     projectid = models.BigIntegerField(editable=False,
             help_text="Unikalus projekto numeris. "+\

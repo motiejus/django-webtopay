@@ -6,9 +6,14 @@ from django.utils.safestring import mark_safe
 from django.core.exceptions import ValidationError
 
 from widgets import ValueHiddenInput
+#from models import WebToPayResponse
 
 DEFAULT_BUTTON_HTML = u"<input type='submit' value='Pay'/>"
-POSTBACK_ENDPOINT = 'https://www.mokejimai.lt/pay/'
+POSTBACK_ENDPOINT = "https://www.mokejimai.lt/pay/"
+
+class WebToPayResponseForm(forms.ModelForm):
+    class Meta:
+        model = WebToPayResponse
 
 class WebToPaymentForm(forms.Form):
     projectid = forms.IntegerField(
