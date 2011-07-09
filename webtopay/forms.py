@@ -227,4 +227,4 @@ class WebToPaymentForm(forms.Form):
             [self.cleaned_data[k] for k in fields] + [self.password]))
 
         self.data.update({'sign' : md5(val).hexdigest()})
-        self.full_clean()
+        self.clean() # Propagate field "sign"
