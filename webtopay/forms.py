@@ -1,12 +1,15 @@
 # -*- coding: utf-8 -*-
 
 from django import forms
+from django.utils.safestring import mark_safe
+
 from widgets import ValueHiddenInput
 
-from conf import PROJECT_ID, TEST
+DEFAULT_BUTTON_HTML = u"<input type='submit' value='Pay'/>"
+POSTBACK_ENDPOINT = 'https://www.mokejimai.lt/pay/'
 
-class PaymentForm(forms.Form):
-    projectid = forms.IntegerField(initial=PROJECT_ID,
+class WebToPaymentForm(forms.Form):
+    projectid = forms.IntegerField(
             widget=ValueHiddenInput(),
             help_text="Unikalus projekto numeris. Tik patvirtinti projektai "\
                     "gali priimti įmokas"
@@ -158,17 +161,17 @@ class PaymentForm(forms.Form):
                     "https://www.mokejimai.lt/f/WebToPay-Macro-Sign.zip"\
                     "'>čia<a>")
 
-    only_payments = forms.CharField(max_length=0,
+    only_payments = forms.CharField(
             widget=ValueHiddenInput(),
             help_text="Rodyti tik kablelias išskirtą mokėjimo tipų sąrašą")
 
     # not properly supported yet
-    disallow_payments = forms.CharField(max_length=0,
+    disallow_payments = forms.CharField(
             widget=ValueHiddenInput(),
             help_text="Nerodyti kableliais išskirto mokėjimo tipų sąrašų")
 
     # not properly supported yet
-    charset = forms.CharField(max_length=0,
+    charset = forms.CharField(max_length=255,
             widget=ValueHiddenInput(),
             help_text="Kokiu kodavimu užkoduoti jūsų siunčiami duomenys "\
                     "(numatytoji reikšmė utf-8)")
@@ -194,3 +197,11 @@ class PaymentForm(forms.Form):
             widget=ValueHiddenInput(),
             help_text="Mokėjimai.lt mokėjimų sistemos specifikacijos (API) "\
                     "versijos numeris")
+
+    def __init__(self, *args, **kargs):
+        self.button_html = kargs.pop('button_html', DEFAULT_BUTTON_HTML)
+        super(WebToPaymentForm, self).__init__(*args, **kwargs)
+
+    def render(self):
+        return mark_safe(u'<form action="%s" method="post">%s%s</form>' %\
+                (POSTBACK_ENDPOINT, self.as_p(), self.button_html))
