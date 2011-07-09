@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
+from hashlib import md5
 
 from django import forms
 from django.utils.safestring import mark_safe
+from django.core.exceptions import ValidationError
 
 from widgets import ValueHiddenInput
 
@@ -12,8 +14,7 @@ class WebToPaymentForm(forms.Form):
     projectid = forms.IntegerField(
             widget=ValueHiddenInput(),
             help_text="Unikalus projekto numeris. Tik patvirtinti projektai "\
-                    "gali priimti įmokas"
-            )
+                    "gali priimti įmokas")
 
     orderid = forms.CharField(max_length=40,
             widget=ValueHiddenInput(),
@@ -152,7 +153,7 @@ class WebToPaymentForm(forms.Form):
                     "Pageidautina. Privaloma mokėjimą atliekant tam tikrais "\
                     "mokėjimo būdais. (pvz: mokant per PayPal)")
 
-    sign = forms.CharField(max_length=255,
+    sign = forms.CharField(max_length=255, required=False,
             widget=ValueHiddenInput(),
             help_text="Parametras, kuriuo siunčiamas duomenų parašas. Tai "\
                     "reikalinga patikrinti ar tikrai duomenys siunčiami iš "\
@@ -161,17 +162,17 @@ class WebToPaymentForm(forms.Form):
                     "https://www.mokejimai.lt/f/WebToPay-Macro-Sign.zip"\
                     "'>čia<a>")
 
-    only_payments = forms.CharField(
+    only_payments = forms.CharField(required=False,
             widget=ValueHiddenInput(),
             help_text="Rodyti tik kablelias išskirtą mokėjimo tipų sąrašą")
 
     # not properly supported yet
-    disallow_payments = forms.CharField(
+    disallow_payments = forms.CharField(required=False,
             widget=ValueHiddenInput(),
             help_text="Nerodyti kableliais išskirto mokėjimo tipų sąrašų")
 
     # not properly supported yet
-    charset = forms.CharField(max_length=255,
+    charset = forms.CharField(max_length=255, required=False,
             widget=ValueHiddenInput(),
             help_text="Kokiu kodavimu užkoduoti jūsų siunčiami duomenys "\
                     "(numatytoji reikšmė utf-8)")
@@ -192,7 +193,7 @@ class WebToPaymentForm(forms.Form):
                     "valdymas\" -> \"įmokų surinkimas\" (prie konkretaus "\
                     "projekto) -> \"Leisti testinius mokėjimus\" (pažymėkite)")
 
-    version = forms.CharField(max_length=9,
+    version = forms.CharField(max_length=9, required=False,
             initial="1.4",
             widget=ValueHiddenInput(),
             help_text="Mokėjimai.lt mokėjimų sistemos specifikacijos (API) "\
@@ -200,8 +201,30 @@ class WebToPaymentForm(forms.Form):
 
     def __init__(self, *args, **kargs):
         self.button_html = kargs.pop('button_html', DEFAULT_BUTTON_HTML)
-        super(WebToPaymentForm, self).__init__(*args, **kwargs)
+        try:
+            self.password = kargs.pop('password')
+        except KeyError:
+            raise Exception("Please pass password to form params")
+        super(WebToPaymentForm, self).__init__(*args, **kargs)
 
     def render(self):
-        return mark_safe(u'<form action="%s" method="post">%s%s</form>' %\
-                (POSTBACK_ENDPOINT, self.as_p(), self.button_html))
+        # Create a signed password
+        if self.is_valid():
+            self.sign_with_password()
+            return mark_safe(u'<form action="%s" method="post">%s%s</form>' %\
+                    (POSTBACK_ENDPOINT, self.as_p(), self.button_html))
+        else:
+            raise ValidationError(u"Errors " + self.errors.as_text())
+
+    def sign_with_password(self): # Signs self with password
+        # To be encrypted
+        fields = ['projectid', 'orderid', 'lang', 'amount', 'currency',
+                'accepturl', 'cancelurl', 'callbackurl', 'payment', 'country',
+                'p_firstname', 'p_lastname', 'p_email', 'p_street', 'p_city',
+                'p_state', 'p_zip', 'p_countrycode', 'test', 'version']
+        # Join all values to one string
+        val = "".join(map(lambda x: unicode(x).strip() if x else u'',
+            [self.cleaned_data[k] for k in fields] + [self.password]))
+
+        self.data.update({'sign' : md5(val).hexdigest()})
+        self.full_clean()
