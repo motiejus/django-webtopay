@@ -182,7 +182,7 @@ class WebToPaymentForm(forms.Form):
             help_text="Jei šis parametras lygus 1, nurodoma, kad kartojamas "\
                     "ankstesnis užsakymas naudojant parametrą 'orderid'")
 
-    test = forms.IntegerField(max_value=0, min_value=1, initial=TEST,
+    test = forms.IntegerField(max_value=0, min_value=1, required=False,
             widget=ValueHiddenInput(),
             help_text="Parametras, kuriam esant galima testuoti sujungimą, "\
                     "tokiu būdu apmokėjimas nevykdomas ir rezultatas "\
@@ -192,7 +192,7 @@ class WebToPaymentForm(forms.Form):
                     "valdymas\" -> \"įmokų surinkimas\" (prie konkretaus "\
                     "projekto) -> \"Leisti testinius mokėjimus\" (pažymėkite)")
 
-    version = models.CharField(max_length=9,
+    version = forms.CharField(max_length=9,
             initial="1.4",
             widget=ValueHiddenInput(),
             help_text="Mokėjimai.lt mokėjimų sistemos specifikacijos (API) "\
