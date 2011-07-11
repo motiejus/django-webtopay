@@ -18,7 +18,7 @@ def _respond(obj, request, err=None):
     return HttpResponse("OK")
 
 @require_GET
-def wtp(request):
+def makro(request):
     data = request.GET.copy()
     form = WebToPayResponseForm(data)
 
