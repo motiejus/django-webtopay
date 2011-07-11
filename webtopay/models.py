@@ -3,9 +3,13 @@
 from django.db import models
 
 class WebToPayResponse(models.Model):
-    # The thing we got from server
+    # Non-webtopay params
     query = models.TextField(blank=True)
+    ipaddress = models.IPAddressField(blank=True)
+    flag = models.BooleanField(blank=True, default=False)
+    flag_info = models.TextField(blank=True)
 
+    # The thing we got from server
     projectid = models.BigIntegerField(editable=False,
             help_text="Unikalus projekto numeris. "+\
                     "Tik patvirtinti projektai gali priimti įmokas")
@@ -118,3 +122,13 @@ class WebToPayResponse(models.Model):
         0x15 - Klaidingi kai kurie iš perduotų parametrų
         0x15x0 - Neteisingas vienas iš šių parametrų: cancelurl, accepturl, callbackurl
     """
+
+    def set_flag(self, info):
+        self.flag = True
+        self.flag_info += info
+
+    def send_signals(self):
+        if self.flag:
+            payment_was_flagged.send(sender=self)
+        else:
+            payment_was_successful.send(sender=self)
