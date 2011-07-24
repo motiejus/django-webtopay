@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from hashlib import md5
+import logging
 
 from django import forms
 from django.utils.safestring import mark_safe
@@ -10,6 +11,9 @@ from models import WebToPayResponse
 
 DEFAULT_BUTTON_HTML = u"<input type='submit' value='Pay'/>"
 POSTBACK_ENDPOINT = "https://www.mokejimai.lt/pay/"
+PREFIX = 'wp_'
+
+log = logging.getLogger(__name__)
 
 class WebToPayResponseForm(forms.ModelForm):
     class Meta:
@@ -210,7 +214,15 @@ class WebToPaymentForm(forms.Form):
             self.password = kargs.pop('password')
         except KeyError:
             raise Exception("Please pass password to form params")
-        super(WebToPaymentForm, self).__init__(*args, **kargs)
+
+        # Remove prefix from parameters
+        kargs2 = {}
+        for key, val in kargs.iteritems():
+            if key.startswith(PREFIX):
+                kargs2[key.lstrip(PREFIX)] = val
+            else:
+                log.warn("Unknown parameter %s=%s", key, val)
+        super(WebToPaymentForm, self).__init__(*args, **kargs2)
 
     def render(self):
         # Create a signed password
