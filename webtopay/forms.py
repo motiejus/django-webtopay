@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from hashlib import md5
-import logging
+import re, logging, pdb
 
 from django import forms
 from django.utils.safestring import mark_safe
@@ -18,6 +18,24 @@ log = logging.getLogger(__name__)
 class WebToPayResponseForm(forms.ModelForm):
     class Meta:
         model = WebToPayResponse
+
+    def check_ss1(self, password):
+        fields = [password, self.data['orderid'], self.data['test'], '1']
+        ss1 = Helpers.generate_ss1(fields, "|")
+        return ss1 == self.data['_ss1']
+
+    def __init__(self, data_orig, **kargs):
+        try:
+            self.password = kargs.pop('password')
+        except KeyError:
+            raise Exception("Please pass password to form params")
+
+        # Remove prefix from parameters
+        data = {}
+        for key, val in data_orig.iteritems():
+            data[re.sub('^wp_', '', key)] = val
+        super(WebToPayResponseForm, self).__init__(data, **kargs)
+
 
 class WebToPaymentForm(forms.Form):
     projectid = forms.IntegerField(
@@ -214,15 +232,8 @@ class WebToPaymentForm(forms.Form):
             self.password = kargs.pop('password')
         except KeyError:
             raise Exception("Please pass password to form params")
+        super(WebToPaymentForm, self).__init__(data, **kargs)
 
-        # Remove prefix from parameters
-        kargs2 = {}
-        for key, val in kargs.iteritems():
-            if key.startswith(PREFIX):
-                kargs2[key.lstrip(PREFIX)] = val
-            else:
-                log.warn("Unknown parameter %s=%s", key, val)
-        super(WebToPaymentForm, self).__init__(*args, **kargs2)
 
     def render(self):
         # Create a signed password
@@ -239,9 +250,13 @@ class WebToPaymentForm(forms.Form):
                 'accepturl', 'cancelurl', 'callbackurl', 'payment', 'country',
                 'p_firstname', 'p_lastname', 'p_email', 'p_street', 'p_city',
                 'p_state', 'p_zip', 'p_countrycode', 'test', 'version']
-        # Join all values to one string
-        val = "".join(map(lambda x: unicode(x).strip() if x else u'',
-            [self.cleaned_data[k] for k in fields] + [self.password]))
-
-        self.data.update({'sign' : md5(val).hexdigest()})
+        vals = [self.cleaned_data[k] for k in fields] + [self.password]
+        self.data.update({'sign' : Helpers.generate_ss1(vals, '')})
         self.clean() # Propagate field "sign"
+
+
+class Helpers:
+    @staticmethod
+    def generate_ss1(values, sep):
+        ret = sep.join(map(lambda x: unicode(x).strip() if x else u'', values))
+        return md5(ret).hexdigest()
