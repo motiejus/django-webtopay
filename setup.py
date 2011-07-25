@@ -6,7 +6,7 @@ import webtopay
 
 install_requires = [
     'Django>=1.3',
-    'm2crypto'
+    'M2crypto'
     ]
 
 try:

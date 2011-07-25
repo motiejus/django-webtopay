@@ -1,17 +1,26 @@
 # -*- coding: utf-8 -*-
+from M2Crypto import BIO, RSA, EVP
+import base64
 from hashlib import md5
 import re, logging, pdb
+
+try:
+    # python 2.7 and above
+    from collections import OrderedDict
+except ImportError:
+    from ordereddict import OrderedDict
 
 from django import forms
 from django.utils.safestring import mark_safe
 from django.core.exceptions import ValidationError
 
-from widgets import ValueHiddenInput
-from models import WebToPayResponse
+from webtopay.cert import pem
+from webtopay.widgets import ValueHiddenInput
+from webtopay.models import WebToPayResponse
+
 
 DEFAULT_BUTTON_HTML = u"<input type='submit' value='Pay'/>"
 POSTBACK_ENDPOINT = "https://www.mokejimai.lt/pay/"
-PREFIX = 'wp_'
 
 log = logging.getLogger(__name__)
 
@@ -24,6 +33,28 @@ class WebToPayResponseForm(forms.ModelForm):
         ss1 = Helpers.generate_ss1(fields, "|")
         return ss1 == self.data['_ss1']
 
+    def check_ss2(self):
+        """ from libwebtopay:
+        openssl_verify($_SS2, base64_decode($response['_ss2']), $pKeyP);
+        foreach ($response as $key => $value) {
+            if ($key!='_ss2') $_SS2 .= "{$value}|";
+        }
+        """
+        fields = self.data.copy()
+        sig = base64.decodestring(fields.pop('_ss2'))
+
+        verify_msg = "|".join(fields.values()) + "|"
+
+        pubkey = open('webtopay/pubkey.pem').read()
+        bio = BIO.MemoryBuffer(pubkey)
+
+        rsa = RSA.load_pub_key_bio(bio)
+        pubkey = EVP.PKey()
+        pubkey.assign_rsa(rsa)
+        pubkey.verify_init()
+        pubkey.verify_update(verify_msg)
+        return pubkey.verify_final(sig) == 1
+
     def __init__(self, data_orig, **kargs):
         try:
             self.password = kargs.pop('password')
@@ -31,7 +62,7 @@ class WebToPayResponseForm(forms.ModelForm):
             raise Exception("Please pass password to form params")
 
         # Remove prefix from parameters
-        data = {}
+        data = OrderedDict()
         for key, val in data_orig.iteritems():
             data[re.sub('^wp_', '', key)] = val
         super(WebToPayResponseForm, self).__init__(data, **kargs)
