@@ -7,7 +7,7 @@ from django.conf import settings
 
 if not settings.configured:
     settings.configure(
-        ROOT_URLCONF='webtopay.makro.urls',
+        ROOT_URLCONF='webtopay.urls.makro',
         INSTALLED_APPS=['webtopay'],
         DATABASES = {
             'default': {

@@ -40,7 +40,7 @@ class TestVerifications(TestCase):
         self.assertFalse(form.check_ss1())
 
     def testSS2Fail(self):
-        query2 = query.replace('FxVM5X7j2mg9w', 'fXvm5x7J2MG9W')
+        query2 = query.replace('FxVM5X7j2mg9w', 'FxVM5X7j2mg9w'.swapcase())
         form = WebToPayResponseForm(query2)
         self.assertFalse(form.check_ss2())
 
