@@ -13,7 +13,8 @@ if not settings.configured:
             'default': {
                 'ENGINE': 'django.db.backends.sqlite3'
                 }
-            }
+            },
+        WEBTOPAY_PASSWORD='1c4196d0ff7fe4e94bdca98fb251bc25'
     )
 
 from django.test.simple import DjangoTestSuiteRunner

@@ -17,6 +17,7 @@ from django.core.exceptions import ValidationError
 from webtopay.cert import pem as cert_pem
 from webtopay.widgets import ValueHiddenInput
 from webtopay.models import WebToPayResponse
+from webtopay.conf import WTP_PASSWORD, CHECK_SS1, CHECK_SS2
 
 
 DEFAULT_BUTTON_HTML = u"<input type='submit' value='Pay'/>"
@@ -254,10 +255,6 @@ class WebToPaymentForm(forms.Form):
 
     def __init__(self, *args, **kargs):
         self.button_html = kargs.pop('button_html', DEFAULT_BUTTON_HTML)
-        try:
-            self.password = kargs.pop('password')
-        except KeyError:
-            raise Exception("Please pass password to form params")
         super(WebToPaymentForm, self).__init__(data, **kargs)
 
 
@@ -276,7 +273,7 @@ class WebToPaymentForm(forms.Form):
                 'accepturl', 'cancelurl', 'callbackurl', 'payment', 'country',
                 'p_firstname', 'p_lastname', 'p_email', 'p_street', 'p_city',
                 'p_state', 'p_zip', 'p_countrycode', 'test', 'version']
-        vals = [self.cleaned_data[k] for k in fields] + [self.password]
+        vals = [self.cleaned_data[k] for k in f] + [WTP_PASSWORD]
         self.data.update({'sign' : Helpers.generate_ss1(vals, '')})
         self.clean() # Propagate field "sign"
 
