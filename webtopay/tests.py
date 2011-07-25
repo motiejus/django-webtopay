@@ -24,7 +24,6 @@ query = 'wp_projectid=13156&wp_orderid=1&wp_lang=lit&wp_amount=10000&wp_curre'\
         '2mg9wBOO1Y0cefKBSBlFoZjLL2ciV32ETCD4Okxv2l%2FwH8tQhDQnJ6AOJkbh2ayKy8'\
         'yTXOcE1zk%3D'
 
-
 class TestVerifications(TestCase):
     def testSS1(self):
         form = WebToPayResponseForm(query)
@@ -50,10 +49,29 @@ class TestSignals(TestCase):
 
     def testSuccess(self):
         self.got_signal = False
-
         def handle_signal(sender, **kargs):
             self.got_signal = True
             self.signal_obj = sender
         payment_was_successful.connect(handle_signal)
         resp = self.client.get("?" + query)
+        self.assertTrue(self.got_signal)
+
+    def testBadSS1(self):
+        self.got_signal = False
+        def handle_signal(sender, **kargs):
+            self.got_signal = True
+            self.signal_obj = sender
+        payment_was_flagged.connect(handle_signal)
+        query2 = query.replace("c72cffd0345f55fef6595a86e5c7caa6", "bad")
+        resp = self.client.get("?" + query2)
+        self.assertTrue(self.got_signal)
+
+    def testBadSS2(self):
+        self.got_signal = False
+        def handle_signal(sender, **kargs):
+            self.got_signal = True
+            self.signal_obj = sender
+        payment_was_flagged.connect(handle_signal)
+        query2 = query.replace('FxVM5X7j2mg9w', 'FxVM5X7j2mg9w'.swapcase())
+        resp = self.client.get("?" + query2)
         self.assertTrue(self.got_signal)
