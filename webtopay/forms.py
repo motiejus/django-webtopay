@@ -1,14 +1,18 @@
 # -*- coding: utf-8 -*-
-from M2Crypto import BIO, RSA, EVP, X509
-import base64
+import base64, re, logging, pdb
+from M2Crypto import X509
 from hashlib import md5
-import re, logging, pdb
+from urlparse import urlparse
 
 try:
-    # python 2.7 and above
-    from collections import OrderedDict
+    from collections import OrderedDict # python 2.7 and above
 except ImportError:
     from ordereddict import OrderedDict
+
+try:
+    from urlparse import parse_qsl # Python 2.6 and above
+except ImportError:
+    from cgi import parse_qsl
 
 from django import forms
 from django.utils.safestring import mark_safe
@@ -18,7 +22,6 @@ from webtopay.cert import pem as cert_pem
 from webtopay.widgets import ValueHiddenInput
 from webtopay.models import WebToPayResponse
 from webtopay.conf import WTP_PASSWORD, CHECK_SS1, CHECK_SS2
-
 
 DEFAULT_BUTTON_HTML = u"<input type='submit' value='Pay'/>"
 POSTBACK_ENDPOINT = "https://www.mokejimai.lt/pay/"
@@ -31,12 +34,12 @@ class WebToPayResponseForm(forms.ModelForm):
 
     def __init__(self, data_orig, **kargs):
         # Remove prefix from parameters
-        data = OrderedDict()
-        # Sort by key
-        for key in STUPID_ORDERING:
-            data[re.sub('^wp_', '', key)] = data_orig[key]
+        data = OrderedDict(parse_qsl(urlparse(data_orig).path, keep_blank_values=True))
+        data_trim = OrderedDict()
+        for key, value in data.iteritems():
+            data_trim[re.sub('^wp_', '', key)] = value
 
-        super(WebToPayResponseForm, self).__init__(data, **kargs)
+        super(WebToPayResponseForm, self).__init__(data_trim, **kargs)
 
     def badly_authorizes(self):
         if CHECK_SS1 and not self.check_ss1():
@@ -60,11 +63,9 @@ class WebToPayResponseForm(forms.ModelForm):
         }
         """
         fields = self.data.copy()
-        print fields['_ss2']
         sig = base64.decodestring(fields.pop('_ss2'))
 
         verify_msg = "|".join(fields.values()) + "|"
-        print verify_msg
 
         pubkey = X509.load_cert_string(cert_pem).get_pubkey()
         pubkey.verify_init()
@@ -293,11 +294,3 @@ class Helpers:
     def generate_ss1(values, sep):
         ret = sep.join(map(lambda x: unicode(x).strip() if x else u'', values))
         return md5(ret).hexdigest()
-
-STUPID_ORDERING = [
-        'wp_projectid', 'wp_orderid', 'wp_lang', 'wp_amount', 'wp_currency',
-        'wp_payment', 'wp_country', 'wp_p_firstname', 'wp_p_lastname',
-        'wp_p_email', 'wp_p_street', 'wp_p_city', 'wp_test', 'wp_version',
-        'wp_type', 'wp_paytext', 'wp_receiverid', 'wp__ss1', 'wp_status',
-        'wp_requestid', 'wp_name', 'wp_surename', 'wp_payamount',
-        'wp_paycurrency', 'wp__ss2']

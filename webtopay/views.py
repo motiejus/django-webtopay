@@ -21,9 +21,7 @@ def _respond(obj, request, err=None):
 
 @require_GET
 def makro(request):
-    data = request.GET.copy()
-    #pdb.set_trace()
-    form = WebToPayResponseForm(data)
+    form = WebToPayResponseForm(request.META['QUERY_STRING'])
 
     if not form.is_valid():
         return _respond_error(request, "Invalid form. (%s)" % form.errors)
