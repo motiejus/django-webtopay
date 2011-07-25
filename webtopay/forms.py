@@ -32,29 +32,25 @@ class WebToPayResponseForm(forms.ModelForm):
     def __init__(self, data_orig, **kargs):
         # Remove prefix from parameters
         data = OrderedDict()
-        for key, val in data_orig.iteritems():
-            data[re.sub('^wp_', '', key)] = val
+        # Sort by key
+        for key in STUPID_ORDERING:
+            data[re.sub('^wp_', '', key)] = data_orig[key]
+
         super(WebToPayResponseForm, self).__init__(data, **kargs)
 
-    def clean(self):
-        super(WebToPayResponseForm, self).clean()
-
+    def badly_authorizes(self):
         if CHECK_SS1 and not self.check_ss1():
-            if not hasattr(self._errors, '_ss1'):
-                self._errors['_ss1'] = "SS1 (MD5) Verification failed"
-                raise ValidationError("SS1 (MD5) verification failed")
-
+            return 'ss1'
         if CHECK_SS2 and not self.check_ss2():
-            if not hasattr(self._errors, '_ss2'):
-                self._errors['_ss2'] = "SS2 (SSL) Verification failed"
-                raise ValidationError("SS2 (SSL) verification failed")
-
-        return self.cleaned_data
+            return 'ss2'
+        return False
 
     def check_ss1(self):
         fields = [WTP_PASSWORD, self.data['orderid'], self.data['test'], '1']
         ss1 = Helpers.generate_ss1(fields, "|")
-        return ss1 == self.data['_ss1']
+        if ss1 != self.data['_ss1']:
+            return False
+        return True
 
     def check_ss2(self):
         """ from libwebtopay:
@@ -64,14 +60,18 @@ class WebToPayResponseForm(forms.ModelForm):
         }
         """
         fields = self.data.copy()
+        print fields['_ss2']
         sig = base64.decodestring(fields.pop('_ss2'))
 
         verify_msg = "|".join(fields.values()) + "|"
+        print verify_msg
 
         pubkey = X509.load_cert_string(cert_pem).get_pubkey()
         pubkey.verify_init()
         pubkey.verify_update(verify_msg)
-        return pubkey.verify_final(sig) == 1
+        if pubkey.verify_final(sig) != 1:
+            return False
+        return True
 
 
 class WebToPaymentForm(forms.Form):
@@ -293,3 +293,11 @@ class Helpers:
     def generate_ss1(values, sep):
         ret = sep.join(map(lambda x: unicode(x).strip() if x else u'', values))
         return md5(ret).hexdigest()
+
+STUPID_ORDERING = [
+        'wp_projectid', 'wp_orderid', 'wp_lang', 'wp_amount', 'wp_currency',
+        'wp_payment', 'wp_country', 'wp_p_firstname', 'wp_p_lastname',
+        'wp_p_email', 'wp_p_street', 'wp_p_city', 'wp_test', 'wp_version',
+        'wp_type', 'wp_paytext', 'wp_receiverid', 'wp__ss1', 'wp_status',
+        'wp_requestid', 'wp_name', 'wp_surename', 'wp_payamount',
+        'wp_paycurrency', 'wp__ss2']

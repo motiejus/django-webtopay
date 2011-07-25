@@ -2,6 +2,8 @@
 
 from django.db import models
 
+from webtopay.signals import payment_was_successful, payment_was_flagged
+
 class WebToPayResponse(models.Model):
     # Non-webtopay params
     query = models.TextField(blank=True)
@@ -10,7 +12,7 @@ class WebToPayResponse(models.Model):
     flag_info = models.TextField(blank=True)
 
     # The thing we got from server
-    projectid = models.BigIntegerField(editable=False,
+    projectid = models.BigIntegerField(editable=False, null=True,
             help_text="Unikalus projekto numeris. "+\
                     "Tik patvirtinti projektai gali priimti įmokas")
     orderid = models.CharField(max_length=40, editable=False,
@@ -20,7 +22,7 @@ class WebToPayResponse(models.Model):
                     "mokėjimai.lt nepalaiko bus parinkta kalba pagal "+\
                     "lankytojo IP adresą arba anglų kalba pagal nutylėjimą. "+\
                     "(LIT, LAV, EST, RUS, ENG, GER, POL)")
-    amount = models.BigIntegerField(editable=False,
+    amount = models.BigIntegerField(editable=False, null=True,
             help_text="Suma centais, kurią klientas turi apmokėti")
     currency = models.CharField(max_length=3, editable=False,
             help_text="Mokėjimo valiuta (LTL, USD, EUR), kuria pageidaujate, "+\
@@ -43,11 +45,11 @@ class WebToPayResponse(models.Model):
                     "paliekama galimybė pasikeisti šalį")
     paytext = models.TextField(editable=False,
             help_text="Mokėjimo paskirtis, kuri matosi darant pavedimą.")
-    _ss2 = models.IntegerField(blank=True, editable=False,
+    _ss2 = models.CharField(blank=True, editable=False, max_length=255,
             help_text="Parametras, kurio pagalba yra tikrinama, ar iš mūsų "+\
                     "serverio gavote atsakymą. Tai aukščiausio patikimumo "+\
                     "lygio tikrinimo būdas. Atsisiųskite skripto pavyzdį")
-    _ss1 = models.IntegerField(blank=True, editable=False,
+    _ss1 = models.CharField(blank=True, editable=False, max_length=64,
             help_text="Parametras, kurio pagalba yra tikrinama, ar iš mūsų "+\
                     "serverio gavote atsakymą. Tai -- žemesnio nei _ss2 "+\
                     "patikimumo lygio tikrinimo būdas. Atsisiųskite pavyzdį")
@@ -68,7 +70,7 @@ class WebToPayResponse(models.Model):
             help_text="Klaidos kodas")
 
     test = models.SmallIntegerField(choices=((0, 'Production'), (1, 'Test')),
-            editable=False,
+            editable=False, null=True,
             help_text="Parametras, kuriam esant galima testuoti sujungimą, "+\
                     "tokiu būdu apmokėjimas nevykdomas ir rezultatas "+\
                     "grąžinamas iš karto, tartum būtų sumokėta. Norint "+\
@@ -87,7 +89,7 @@ class WebToPayResponse(models.Model):
             help_text="Tai užklausos numeris, kurį gauname, kai žmogus "+\
                     "nuspaudžia ant banko ir kurį pateikiame į "+\
                     "\"callbackurl\" laukelyje nurodytą nuorodą")
-    payamount = models.IntegerField(editable=False,
+    payamount = models.IntegerField(editable=False, null=True,
             help_text="Suma centais, kurią pervedė. Gali skirtis jeigu buvo"+\
                     "konvertuota į kitą valiutą")
 

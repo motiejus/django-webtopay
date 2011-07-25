@@ -1,9 +1,11 @@
-from urlparse import urlparse
-from urllib import unquote_plus
+# -*- coding: UTF-8 -*-
+
+from urllib import unquote_plus, urlencode
 import base64
 import pdb
 
 from django.test import TestCase
+from django.test.client import Client
 
 try:
     # Python 2.6 and later
@@ -13,6 +15,7 @@ except ImportError:
     from cgi import parse_qsl
 
 from webtopay.forms import WebToPayResponseForm, OrderedDict
+from webtopay.signals import payment_was_successful, payment_was_flagged
 
 # "answer" from libwebtopay test case
 params = OrderedDict([
@@ -25,15 +28,14 @@ params = OrderedDict([
         ('wp_country', 'LT'),
         ('wp_p_firstname', 'Vardenis'),
         ('wp_p_lastname', 'Pavardenis'),
-        ('wp_p_email', 'm.sprunskas%40evp.lt'),
-        ('wp_p_street', 'M%C4%97nulio+g.7'),
+        ('wp_p_email', 'm.sprunskas@evp.lt'),
+        ('wp_p_street', 'Mėnulio g.7'),
         ('wp_p_city', 'Vilnius'),
         ('wp_test', '1'),
         ('wp_version', '1.4'),
         ('wp_type', 'EMA'),
-        ('wp_paytext', 'U%C5%BEsakymas+nr%3A+1+http%3A%2F%2Ftest-project.'\
-                'local+projekte.+%28Pardav%C4%97jas%3A+Libwebtopay+'\
-                'Libwebtopay%29+%2813156%29'),
+        ('wp_paytext', 'Užsakymas nr: 1 http://test-project.local projekte. '\
+                '(Pardavėjas: Libwebtopay Libwebtopay) (13156)'),
         ('wp_receiverid', '168328'),
         ('wp__ss1', 'c72cffd0345f55fef6595a86e5c7caa6'),
         ('wp_status', '1'),
@@ -42,38 +44,42 @@ params = OrderedDict([
         ('wp_surename', ''),
         ('wp_payamount', '10000'),
         ('wp_paycurrency', 'LTL'),
-        ('wp__ss2', 'oSiHSlnin%2FSSJ7bGaTWZybtHzA6%2FNaZcPtS3f07KZMoTeJteL6rn'\
-                'uw7qfT%2FACGW5Hifu2ieNnCBpu2XLnsR10Ja8%2FxVM5X7j2mg9wBOO1Y0c'\
-                'efKBSBlFoZjLL2ciV32ETCD4Okxv2l%2FwH8tQhDQnJ6AOJkbh2ayKy8yTX'\
-                'OcE1zk%3D')])
+        ('wp__ss2', 'oSiHSlnin/SSJ7bGaTWZybtHzA6/NaZcPtS3f07KZMoTeJteL6rnuw7q'\
+                'fT/ACGW5Hifu2ieNnCBpu2XLnsR10Ja8/xVM5X7j2mg9wBOO1Y0cefKBSBlF'\
+                'oZjLL2ciV32ETCD4Okxv2l/wH8tQhDQnJ6AOJkbh2ayKy8yTXOcE1zk=')])
 
-query = OrderedDict([(k, unquote_plus(v)) for k,v in params.items()])
 
 class TestVerifications(TestCase):
     def testSS1(self):
-        form = WebToPayResponseForm(query)
+        form = WebToPayResponseForm(params)
         self.assertTrue(form.check_ss1())
 
     def testSS2(self):
-        form = WebToPayResponseForm(query)
+        form = WebToPayResponseForm(params)
         self.assertTrue(form.check_ss2())
 
-    def testSS1SS2(self):
-        form = WebToPayResponseForm(query)
-        self.assertTrue(form.is_valid())
-
     def testSS1Fail(self):
-        query_c = query.copy()
-        query_c['wp__ss1'] += 'bad'
-        form = WebToPayResponseForm(query_c)
+        params_c = params.copy()
+        params_c['wp__ss1'] += 'bad'
+        form = WebToPayResponseForm(params_c)
         self.assertFalse(form.check_ss1())
-        self.assertFalse(form.is_valid())
-        self.assertTrue(form.errors['_ss1'])
 
     def testSS2Fail(self):
-        query_c = query.copy()
-        query_c['wp__ss2'] = base64.encodestring('yammy')
-        form = WebToPayResponseForm(query_c)
+        params_c = params.copy()
+        params_c['wp__ss2'] = base64.encodestring('yammy')
+        form = WebToPayResponseForm(params_c)
         self.assertFalse(form.check_ss2())
-        self.assertFalse(form.is_valid())
-        self.assertTrue(form.errors['_ss2'])
+
+class TestSignals(TestCase):
+    def setUp(self):
+        self.client = Client()
+
+    def testSuccess(self):
+        self.got_signal = False
+
+        def handle_signal(sender, **kargs):
+            self.got_signal = True
+            self.signal_obj = sender
+        payment_was_successful.connect(handle_signal)
+        resp = self.client.get('?' + urlencode(params))
+        self.assertTrue(self.got_signal)

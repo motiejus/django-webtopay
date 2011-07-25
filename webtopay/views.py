@@ -1,3 +1,5 @@
+import pdb
+
 from django.http import HttpResponse
 from django.views.decorators.http import require_GET
 
@@ -20,10 +22,15 @@ def _respond(obj, request, err=None):
 @require_GET
 def makro(request):
     data = request.GET.copy()
+    #pdb.set_trace()
     form = WebToPayResponseForm(data)
 
     if not form.is_valid():
         return _respond_error(request, "Invalid form. (%s)" % form.errors)
+
+    err = form.badly_authorizes()
+    if err:
+        return _respond_error(request, "Unauthorized transaction: %s" % err)
 
     # Form validated fine, we can try to "save" it --
     # get instance of WebToPayResponse
