@@ -23,11 +23,13 @@ class TestVerifications(TestCase):
     def testSS1(self):
         form = WebToPayResponseForm(query)
         self.assertTrue(form.check_ss1())
-        self.assertTrue(form.is_valid())
 
     def testSS2(self):
         form = WebToPayResponseForm(query)
         self.assertTrue(form.check_ss2())
+
+    def testSS1SS2(self):
+        form = WebToPayResponseForm(query)
         self.assertTrue(form.is_valid())
 
     def testSS1Fail(self):
