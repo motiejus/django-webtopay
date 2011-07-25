@@ -6,8 +6,9 @@ import pdb
 
 from django.test import TestCase
 from django.test.client import Client
+from django.utils.datastructures import SortedDict
 
-from webtopay.forms import WebToPayResponseForm, OrderedDict
+from webtopay.forms import WebToPayResponseForm
 from webtopay.signals import payment_was_successful, payment_was_flagged
 
 # query string from libwebtopay tests

@@ -10,13 +10,6 @@ install_requires = [
     'M2crypto'
     ]
 
-try:
-    # python 2.7 and above have this
-    from collections import OrderedDict
-except ImportError:
-    # backport for 2.4-2.6
-    install_requires += ['ordereddict']
-
 setup(
     name='django-webtopay',
     version=".".join(map(str, webtopay.__version__)),

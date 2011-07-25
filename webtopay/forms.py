@@ -5,17 +5,13 @@ from hashlib import md5
 from urlparse import urlparse
 
 try:
-    from collections import OrderedDict # python 2.7 and above
-except ImportError:
-    from ordereddict import OrderedDict
-
-try:
     from urlparse import parse_qsl # Python 2.6 and above
 except ImportError:
     from cgi import parse_qsl
 
 from django import forms
 from django.utils.safestring import mark_safe
+from django.utils.datastructures import SortedDict
 from django.core.exceptions import ValidationError
 
 from webtopay.cert import pem as cert_pem
@@ -32,8 +28,8 @@ class WebToPayResponseForm(forms.ModelForm):
 
     def __init__(self, data_orig, **kargs):
         # Remove prefix from parameters
-        data = OrderedDict(parse_qsl(urlparse(data_orig).path, keep_blank_values=True))
-        data_trim = OrderedDict()
+        data = SortedDict(parse_qsl(urlparse(data_orig).path, keep_blank_values=True))
+        data_trim = SortedDict()
         for key, value in data.iteritems():
             data_trim[re.sub('^wp_', '', key)] = value
 
