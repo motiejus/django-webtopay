@@ -29,8 +29,30 @@ class WebToPayResponseForm(forms.ModelForm):
     class Meta:
         model = WebToPayResponse
 
-    def check_ss1(self, password):
-        fields = [password, self.data['orderid'], self.data['test'], '1']
+    def __init__(self, data_orig, **kargs):
+        # Remove prefix from parameters
+        data = OrderedDict()
+        for key, val in data_orig.iteritems():
+            data[re.sub('^wp_', '', key)] = val
+        super(WebToPayResponseForm, self).__init__(data, **kargs)
+
+    def clean(self):
+        super(WebToPayResponseForm, self).clean()
+
+        if CHECK_SS1 and not self.check_ss1():
+            if not hasattr(self._errors, '_ss1'):
+                self._errors['_ss1'] = "SS1 (MD5) Verification failed"
+                raise ValidationError("SS1 (MD5) verification failed")
+
+        if CHECK_SS2 and not self.check_ss2():
+            if not hasattr(self._errors, '_ss2'):
+                self._errors['_ss2'] = "SS2 (SSL) Verification failed"
+                raise ValidationError("SS2 (SSL) verification failed")
+
+        return self.cleaned_data
+
+    def check_ss1(self):
+        fields = [WTP_PASSWORD, self.data['orderid'], self.data['test'], '1']
         ss1 = Helpers.generate_ss1(fields, "|")
         return ss1 == self.data['_ss1']
 
@@ -50,18 +72,6 @@ class WebToPayResponseForm(forms.ModelForm):
         pubkey.verify_init()
         pubkey.verify_update(verify_msg)
         return pubkey.verify_final(sig) == 1
-
-    def __init__(self, data_orig, **kargs):
-        try:
-            self.password = kargs.pop('password')
-        except KeyError:
-            raise Exception("Please pass password to form params")
-
-        # Remove prefix from parameters
-        data = OrderedDict()
-        for key, val in data_orig.iteritems():
-            data[re.sub('^wp_', '', key)] = val
-        super(WebToPayResponseForm, self).__init__(data, **kargs)
 
 
 class WebToPaymentForm(forms.Form):

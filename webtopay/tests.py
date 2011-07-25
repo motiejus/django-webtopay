@@ -1,4 +1,5 @@
 from urlparse import urlparse
+import base64
 import pdb
 
 from django.test import TestCase
@@ -17,15 +18,30 @@ answer = 'http://www.webtopay.com/?testwp_answer=callback&wp_projectid=13156&wp_
 
 query_tup = parse_qsl(urlparse(answer).query, keep_blank_values=True) # we are interested only in GET part
 query = OrderedDict(query_tup[1:]) # removing ?testwp_answer=callback
-SIGN_PASSWORD = '1c4196d0ff7fe4e94bdca98fb251bc25'
 
 class TestVerifications(TestCase):
     def testSS1(self):
-        form = WebToPayResponseForm(query, password=SIGN_PASSWORD)
+        form = WebToPayResponseForm(query)
+        self.assertTrue(form.check_ss1())
         self.assertTrue(form.is_valid())
-        self.assertTrue(form.check_ss1(SIGN_PASSWORD))
 
     def testSS2(self):
-        form = WebToPayResponseForm(query, password=SIGN_PASSWORD)
-        self.assertTrue(form.is_valid())
+        form = WebToPayResponseForm(query)
         self.assertTrue(form.check_ss2())
+        self.assertTrue(form.is_valid())
+
+    def testSS1Fail(self):
+        query_c = query.copy()
+        query_c['wp__ss1'] += 'bad'
+        form = WebToPayResponseForm(query_c)
+        self.assertFalse(form.check_ss1())
+        self.assertFalse(form.is_valid())
+        self.assertTrue(form.errors['_ss1'])
+
+    def testSS2Fail(self):
+        query_c = query.copy()
+        query_c['wp__ss2'] = base64.encodestring('yammy')
+        form = WebToPayResponseForm(query_c)
+        self.assertFalse(form.check_ss2())
+        self.assertFalse(form.is_valid())
+        self.assertTrue(form.errors['_ss2'])
