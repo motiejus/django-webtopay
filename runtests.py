@@ -7,7 +7,7 @@ from django.conf import settings
 
 if not settings.configured:
     settings.configure(
-        ROOT_URLCONF='',
+        ROOT_URLCONF='webtopay.makro.urls',
         INSTALLED_APPS=['webtopay'],
         DATABASES = {
             'default': {
@@ -19,11 +19,13 @@ if not settings.configured:
 
 from django.test.simple import DjangoTestSuiteRunner
 
-def runtests():
+def runtests(*args):
     parent = dirname(abspath(__file__))
     sys.path.insert(0, parent)
     testrunner = DjangoTestSuiteRunner()
-    failures = testrunner.run_tests(None)
+    if not args:
+        args = None
+    failures = testrunner.run_tests(args)
     sys.exit(failures)
 
 if __name__ == '__main__':
