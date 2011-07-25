@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from M2Crypto import BIO, RSA, EVP
+from M2Crypto import BIO, RSA, EVP, X509
 import base64
 from hashlib import md5
 import re, logging, pdb
@@ -14,7 +14,7 @@ from django import forms
 from django.utils.safestring import mark_safe
 from django.core.exceptions import ValidationError
 
-from webtopay.cert import pem
+from webtopay.cert import pem as cert_pem
 from webtopay.widgets import ValueHiddenInput
 from webtopay.models import WebToPayResponse
 
@@ -45,12 +45,7 @@ class WebToPayResponseForm(forms.ModelForm):
 
         verify_msg = "|".join(fields.values()) + "|"
 
-        pubkey = open('webtopay/pubkey.pem').read()
-        bio = BIO.MemoryBuffer(pubkey)
-
-        rsa = RSA.load_pub_key_bio(bio)
-        pubkey = EVP.PKey()
-        pubkey.assign_rsa(rsa)
+        pubkey = X509.load_cert_string(cert_pem).get_pubkey()
         pubkey.verify_init()
         pubkey.verify_update(verify_msg)
         return pubkey.verify_final(sig) == 1
