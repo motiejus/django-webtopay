@@ -1,3 +1,30 @@
 Webtopay (mokejimai.lt) integration app for Django web framework
 
 Inspired by django-paypal
+
+How to use
+==========
+
+1) install django-webtopay
+2) add WEBTOPAY_PASSWORD='pass' to your settings file
+3) Add callback url:
+    url(r'^wtp/', include('webtopay.urls.makro'))
+   (it should be relatively hard to guess)
+4) Create a form for submission:
+    form = WebToPaymentForm(
+        dict(projectid = 123123,
+            orderid = '3c3662bcb661d6de679c636744c66b62',
+            accepturl = request.build_absolute_uri(),
+            cancelurl = request.build_absolute_uri(),
+            callbackurl = reverse('webtopay-makro'),
+            paytext = "Payment for services",
+            p_firstname = "Vardenis",
+            p_lastname = "Pavardenis",
+            p_email = vardenis@pavardenis.lt,
+            amount = 989, # 9 Lt 89 ct
+            test = 1
+            ),
+        button_html="<input type='submit' value='Pay!'/>",
+        )
+5) Catch a django signal
+TODO.
