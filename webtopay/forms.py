@@ -17,8 +17,7 @@ from django.core.exceptions import ValidationError
 from webtopay.cert import pem as cert_pem
 from webtopay.widgets import ValueHiddenInput
 from webtopay.models import WebToPayResponse
-from webtopay.conf import WTP_PASSWORD, CHECK_SS1, CHECK_SS2,\
-        BUTTON_HTML, POSTBACK_ENDPOINT
+from webtopay.conf import WTP_PASSWORD, CHECK_SS1, CHECK_SS2, POSTBACK_ENDPOINT
 
 log = logging.getLogger(__name__)
 
@@ -242,7 +241,7 @@ class WebToPaymentForm(forms.Form):
             help_text="Jei šis parametras lygus 1, nurodoma, kad kartojamas "\
                     "ankstesnis užsakymas naudojant parametrą 'orderid'")
 
-    test = forms.IntegerField(max_value=0, min_value=1, required=False,
+    test = forms.IntegerField(max_value=1, min_value=0, required=False,
             widget=ValueHiddenInput(),
             help_text="Parametras, kuriam esant galima testuoti sujungimą, "\
                     "tokiu būdu apmokėjimas nevykdomas ir rezultatas "\
@@ -258,12 +257,18 @@ class WebToPaymentForm(forms.Form):
             help_text="Mokėjimai.lt mokėjimų sistemos specifikacijos (API) "\
                     "versijos numeris")
 
+
+    def __init__(self, *args, **kargs):
+        self.button_html = kargs.pop('button_html',
+                "<input type='submit' value='Pay'/>")
+        super(WebToPaymentForm, self).__init__(*args, **kargs)
+
     def render(self):
         # Create a signed password
         if self.is_valid():
             self.sign_with_password()
             return mark_safe(u'<form action="%s" method="post">%s%s</form>' %\
-                    (POSTBACK_ENDPOINT, self.as_p(), BUTTON_HTML))
+                    (POSTBACK_ENDPOINT, self.as_p(), self.button_html))
         else:
             raise ValidationError(u"Errors " + self.errors.as_text())
 
@@ -273,13 +278,13 @@ class WebToPaymentForm(forms.Form):
                 'accepturl', 'cancelurl', 'callbackurl', 'payment', 'country',
                 'p_firstname', 'p_lastname', 'p_email', 'p_street', 'p_city',
                 'p_state', 'p_zip', 'p_countrycode', 'test', 'version']
-        vals = [self.cleaned_data[k] for k in f] + [WTP_PASSWORD]
-        self.data.update({'sign' : Helpers.generate_ss1(vals, '')})
+        vals = [self.cleaned_data[k] for k in fields] + [WTP_PASSWORD]
+        self.data.update({'sign' : Helpers.generate_ss1(vals, u'')})
         self.clean() # Propagate field "sign"
 
 
 class Helpers:
     @staticmethod
     def generate_ss1(values, sep):
-        ret = sep.join(map(lambda x: unicode(x).strip() if x else u'', values))
-        return md5(ret).hexdigest()
+        fn = lambda x: x if isinstance(x, unicode) else unicode(x)
+        return md5(sep.join(map(fn, values)).encode('utf8')).hexdigest()
