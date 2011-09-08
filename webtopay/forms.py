@@ -259,7 +259,7 @@ class WebToPaymentForm(forms.Form):
 
 
     def __init__(self, *args, **kargs):
-        self.button_html = kargs.pop('button_html',
+        self.button_html  = kargs.pop('button_html',
                 "<input type='submit' value='Pay'/>")
         super(WebToPaymentForm, self).__init__(*args, **kargs)
 
@@ -267,8 +267,10 @@ class WebToPaymentForm(forms.Form):
         # Create a signed password
         if self.is_valid():
             self.sign_with_password()
-            return mark_safe(u'<form action="%s" method="post">%s%s</form>' %\
-                    (POSTBACK_ENDPOINT, self.as_p(), self.button_html))
+            return mark_safe(
+                    u'<form action="%s" method="post" target="_blank">%s%s'\
+                            '</form>' % (POSTBACK_ENDPOINT, self.as_p(),
+                                self.button_html))
         else:
             raise ValidationError(u"Errors " + self.errors.as_text())
 
