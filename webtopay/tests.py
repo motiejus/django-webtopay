@@ -76,3 +76,6 @@ class TestSignals(TestCase):
         query2 = query.replace('FxVM5X7j2mg9w', 'FxVM5X7j2mg9w'.swapcase())
         resp = self.client.get("?" + query2)
         self.assertTrue(self.got_signal)
+
+    def testFail(self):
+        self.assertTrue(False)
