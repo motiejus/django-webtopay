@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from django.db import models
+from django.utils.translation import ugettext as _
 
 from webtopay.signals import payment_was_successful, payment_was_flagged
 
@@ -63,11 +64,14 @@ class WebToPayResponse(models.Model):
     surename = models.CharField(max_length=255, blank=True,
             help_text="Mokėtojo pavardė, gauta iš mokėjimo sistemos. "+\
                     "Siunčiamas tik jeigu mokėjimo sistema tokį suteikia")
-    status = models.CharField(max_length=255, editable=False,
-            help_text="Mokėjimo būklė: "+\
+    status = models.IntegerField(max_length=255, help_text="Mokėjimo būklė: "+\
                     "0 - apmokėjimas neįvyko, "+\
                     "1 - apmokėta sėkmingai, "+\
-                    "2 - mokėjimo nurodymas priimtas, bet dar neįvykdytas")
+                    "2 - mokėjimo nurodymas priimtas, bet dar neįvykdytas",
+                    choices=((0, _('payment did not succeed')),
+                        (1, _('payment succeeded')),
+                        (0, _('payment accepted, but not yet processed'))),
+                    )
 
     # Error codes are stored separately
     error = models.CharField(max_length=20, blank=True,
