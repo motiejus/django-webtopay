@@ -71,7 +71,8 @@ class WebToPayResponse(models.Model):
                     "2 - mokėjimo nurodymas priimtas, bet dar neįvykdytas",
                     choices=((0, _('payment did not succeed')),
                         (1, _('payment succeeded')),
-                        (0, _('payment accepted, but not yet processed'))),
+                        (2, _('payment accepted, but not yet processed'))),
+                    default=0
                     )
 
     # Error codes are stored separately
