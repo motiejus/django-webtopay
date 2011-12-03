@@ -8,14 +8,14 @@ class Migration(SchemaMigration):
 
     def forwards(self, orm):
         
-        # Changing field 'WebToPayResponse.status'
-        db.alter_column('webtopay_webtopayresponse', 'status', self.gf('django.db.models.fields.IntegerField')(max_length=255))
+        # Deleting field 'WebToPayResponse.status'
+        db.delete_column('webtopay_webtopayresponse', 'status')
 
 
     def backwards(self, orm):
         
-        # Changing field 'WebToPayResponse.status'
-        db.alter_column('webtopay_webtopayresponse', 'status', self.gf('django.db.models.fields.CharField')(max_length=255))
+        # User chose to not deal with backwards NULL issues for 'WebToPayResponse.status'
+        raise RuntimeError("Cannot reverse this migration. 'WebToPayResponse.status' and its values cannot be restored.")
 
 
     models = {
@@ -42,7 +42,6 @@ class Migration(SchemaMigration):
             'projectid': ('django.db.models.fields.BigIntegerField', [], {'null': 'True'}),
             'query': ('django.db.models.fields.TextField', [], {'blank': 'True'}),
             'requestid': ('django.db.models.fields.CharField', [], {'max_length': '40', 'blank': 'True'}),
-            'status': ('django.db.models.fields.IntegerField', [], {'max_length': '255'}),
             'surename': ('django.db.models.fields.CharField', [], {'max_length': '255', 'blank': 'True'}),
             'test': ('django.db.models.fields.SmallIntegerField', [], {'null': 'True'}),
             'version': ('django.db.models.fields.CharField', [], {'max_length': '9'})
