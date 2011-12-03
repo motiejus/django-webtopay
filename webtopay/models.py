@@ -9,7 +9,8 @@ class WebToPayResponse(models.Model):
     # Non-webtopay params
 
     def __unicode__(self):
-        return "%s %.2f" % (self.currency, self.amount / 100)
+        amount = self.amount / 100 if self.amount else 0
+        return "%s %.2f" % (self.currency, amount)
 
     query = models.TextField(blank=True)
     ipaddress = models.IPAddressField(blank=True)
