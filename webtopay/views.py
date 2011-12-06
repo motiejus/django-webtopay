@@ -1,3 +1,7 @@
+import logging
+log = logging.getLogger(__name__)
+
+from django.core.signals import got_request_exception
 
 from django.http import HttpResponse
 from django.views.decorators.http import require_GET
@@ -15,7 +19,10 @@ def _respond(obj, request, err=None):
     obj.query = request.GET.urlencode()
     obj.ipaddress = request.META.get('REMOTE_ADDR', '')
     obj.save()
-    obj.send_signals()
+    try:
+        obj.send_signals()
+    except:
+        log.exception("Error processing response")
     return HttpResponse("OK")
 
 @require_GET

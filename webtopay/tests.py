@@ -76,3 +76,11 @@ class TestSignals(TestCase):
         query2 = query.replace('FxVM5X7j2mg9w', 'FxVM5X7j2mg9w'.swapcase())
         resp = self.client.get("?" + query2)
         self.assertTrue(self.got_signal)
+
+    def testBadProcessing(self):
+        self.got_signal = False
+        def handle_signal(sender, **kargs):
+            raise Exception("broken signal handler")
+        payment_was_successful.connect(handle_signal)
+        resp = self.client.get("?" + query)
+        self.assertEqual("OK", resp.content)
