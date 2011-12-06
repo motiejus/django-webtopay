@@ -3,6 +3,7 @@
 from urllib import unquote_plus, urlencode
 import base64
 import pdb
+import logging
 
 from django.test import TestCase
 from django.test.client import Client
@@ -82,5 +83,10 @@ class TestSignals(TestCase):
         def handle_signal(sender, **kargs):
             raise Exception("broken signal handler")
         payment_was_successful.connect(handle_signal)
+
+        logger = logging.getLogger('webtopay.views')
+        old_level = logger.level
+        logger.setLevel(100)
         resp = self.client.get("?" + query)
+        logger.setLevel(old_level)
         self.assertEqual("OK", resp.content)
