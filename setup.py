@@ -20,6 +20,6 @@ setup(
         "Intended Audience :: System Administrators",
         "Operating System :: OS Independent",
         "Topic :: Software Development",
-        "License :: OSI Approved :: MIT"
+        "License :: OSI Approved :: MIT License"
     ],
 )
