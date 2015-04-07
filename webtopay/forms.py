@@ -24,6 +24,7 @@ log = logging.getLogger(__name__)
 class WebToPayResponseForm(forms.ModelForm):
     class Meta:
         model = WebToPayResponse
+        exclude = []
 
     def __init__(self, data_orig, **kargs):
         # Remove prefix from parameters
@@ -156,7 +157,7 @@ class WebToPaymentForm(forms.Form):
 
         Apmokėjimas už prekes pagal užsakymą [order_nr] svetainėje [site_name].
     """
-    
+
     p_firstname = forms.CharField(max_length=255, required=False,
             widget=ValueHiddenInput(),
             help_text="Pirkėjo vardas. Pageidautina daugumoje mokėjimo būdų. "\
