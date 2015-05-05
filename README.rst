@@ -59,5 +59,16 @@ If you have any questions or problems, please use *issues* page.
 
 |travis|_
 
+Dependencies
+------------
+
+For supported Python and Django versions, see build matrix of ``.travis.yml``.
+
+Release notes
+-------------
+
+* **1.0.1** — Django 1.6 support.
+* **1.0** — First production Release.
+
 .. |travis| image:: https://travis-ci.org/Motiejus/django-webtopay.png
 .. _travis: https://travis-ci.org/Motiejus/django-webtopay
