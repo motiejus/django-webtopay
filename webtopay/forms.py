@@ -1,8 +1,6 @@
 # -*- coding: UTF-8 -*-
-try:
-    from collections import OrderedDict
-except ImportError:
-    from django.utils.datastructures import SortedDict as OrderedDict
+
+from collections import OrderedDict
 import six
 import base64
 import logging
@@ -304,4 +302,8 @@ class WebToPaymentForm(forms.Form):
 class Helpers:
     @staticmethod
     def generate_ss1(values, sep):
-        return md5(sep.join(map(six.u, values)).encode('utf8')).hexdigest()
+        if six.PY3:
+            values = map(str, values)
+        else:
+            values = map(unicode, values)
+        return md5(sep.join(values).encode('utf8')).hexdigest()
