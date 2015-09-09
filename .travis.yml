@@ -1,9 +1,8 @@
 language: python
 script: "python ./runtests.py"
 before_install:
-    - sudo apt-get install swig
+    - sudo apt-get install libssl-dev
 install:
-    - "./m2crypto_ubuntu"
     - "pip install Django==$DJANGO"
     - "python setup.py install"
 env:

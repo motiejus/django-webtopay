@@ -1,5 +1,8 @@
 # -*- coding: UTF-8 -*-
-from collections import OrderedDict
+try:
+    from collections import OrderedDict
+except ImportError
+    from django.utils.datastructures import SortedDict as OrderedDict
 import six
 import base64
 import logging
