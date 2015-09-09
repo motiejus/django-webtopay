@@ -1,13 +1,9 @@
 # -*- coding: UTF-8 -*-
 
-from urllib import unquote_plus, urlencode
-import base64
-import pdb
 import logging
 
 from django.test import TestCase
 from django.test.client import Client
-from django.utils.datastructures import SortedDict
 
 from webtopay.forms import WebToPayResponseForm
 from webtopay.signals import payment_was_successful, payment_was_flagged
@@ -89,4 +85,4 @@ class TestSignals(TestCase):
         logger.setLevel(100)
         resp = self.client.get("?" + query)
         logger.setLevel(old_level)
-        self.assertEqual("OK", resp.content)
+        self.assertEqual(str("OK"), str(resp.content.decode('utf-8')))
