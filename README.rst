@@ -3,8 +3,8 @@ Webtopay (mokejimai.lt) integration app for Django web framework
 
 Inspired by django-paypal.
 
-**Warning: since the original author moved on, this project is not maintained
-any more. You still might find a more up-to-date fork if you look carefully.**
+**Warning: the original author moved on, the project is no longer maintained.
+If you want to use this, please look around for a more up-to-date fork.**
 
 How to use
 ----------
