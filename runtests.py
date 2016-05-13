@@ -3,6 +3,7 @@ import sys
 
 from os.path import dirname, abspath
 
+import django
 from django.conf import settings
 
 if not settings.configured:
@@ -17,12 +18,16 @@ if not settings.configured:
         WEBTOPAY_PASSWORD='1c4196d0ff7fe4e94bdca98fb251bc25'
     )
 
-from django.test.simple import DjangoTestSuiteRunner
+if django.VERSION >= (1, 8):
+    from django.test.runner import DiscoverRunner as DjangoTestRunner
+    django.setup()
+else:
+    from django.test.simple import DjangoTestSuiteRunner as DjangoTestRunner
 
 def runtests(*args):
     parent = dirname(abspath(__file__))
     sys.path.insert(0, parent)
-    testrunner = DjangoTestSuiteRunner()
+    testrunner = DjangoTestRunner()
     if not args:
         args = None
     failures = testrunner.run_tests(args)

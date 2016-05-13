@@ -1,8 +1,18 @@
 # -*- coding: UTF-8 -*-
-import base64, re, logging, pdb
-from M2Crypto import X509
+
+from collections import OrderedDict
+import six
+import base64
+import logging
+import re
 from hashlib import md5
-from urlparse import urlparse
+
+import OpenSSL
+
+try:
+    from urlparse import urlparse
+except ImportError:
+    from urllib.parse import urlparse # py3
 
 try:
     from urlparse import parse_qsl # Python 2.6 and above
@@ -11,7 +21,6 @@ except ImportError:
 
 from django import forms
 from django.utils.safestring import mark_safe
-from django.utils.datastructures import SortedDict
 from django.core.exceptions import ValidationError
 
 from webtopay.cert import pem as cert_pem
@@ -21,15 +30,17 @@ from webtopay.conf import WTP_PASSWORD, CHECK_SS1, CHECK_SS2, POSTBACK_ENDPOINT
 
 log = logging.getLogger(__name__)
 
+
 class WebToPayResponseForm(forms.ModelForm):
     class Meta:
         model = WebToPayResponse
+        exclude = []
 
     def __init__(self, data_orig, **kargs):
         # Remove prefix from parameters
-        data = SortedDict(parse_qsl(urlparse(data_orig).path, keep_blank_values=True))
-        data_trim = SortedDict()
-        for key, value in data.iteritems():
+        data = OrderedDict(parse_qsl(urlparse(data_orig).path, keep_blank_values=True))
+        data_trim = OrderedDict()
+        for key, value in data.items():
             data_trim[re.sub('^wp_', '', key)] = value
 
         super(WebToPayResponseForm, self).__init__(data_trim, **kargs)
@@ -56,14 +67,17 @@ class WebToPayResponseForm(forms.ModelForm):
         }
         """
         fields = self.data.copy()
-        sig = base64.decodestring(fields.pop('_ss2'))
+        sig = base64.decodestring(bytearray(fields.pop('_ss2'), 'utf-8'))
 
         verify_msg = "|".join(fields.values()) + "|"
 
-        pubkey = X509.load_cert_string(cert_pem).get_pubkey()
-        pubkey.verify_init()
-        pubkey.verify_update(verify_msg)
-        if pubkey.verify_final(sig) != 1:
+        pem = OpenSSL.crypto.load_certificate(
+            OpenSSL.crypto.FILETYPE_PEM,
+            cert_pem
+        )
+        try:
+            OpenSSL.crypto.verify(pem, sig, verify_msg, 'sha1')
+        except OpenSSL.crypto.Error:
             return False
         return True
 
@@ -156,7 +170,7 @@ class WebToPaymentForm(forms.Form):
 
         Apmokėjimas už prekes pagal užsakymą [order_nr] svetainėje [site_name].
     """
-    
+
     p_firstname = forms.CharField(max_length=255, required=False,
             widget=ValueHiddenInput(),
             help_text="Pirkėjo vardas. Pageidautina daugumoje mokėjimo būdų. "\
@@ -288,5 +302,8 @@ class WebToPaymentForm(forms.Form):
 class Helpers:
     @staticmethod
     def generate_ss1(values, sep):
-        fn = lambda x: x if isinstance(x, unicode) else unicode(x)
-        return md5(sep.join(map(fn, values)).encode('utf8')).hexdigest()
+        if six.PY3:
+            values = map(str, values)
+        else:
+            values = map(unicode, values)
+        return md5(sep.join(values).encode('utf8')).hexdigest()

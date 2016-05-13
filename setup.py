@@ -11,7 +11,7 @@ setup(
     author='Motiejus Jakštys',
     author_email='desired.mta@gmail.com',
     url='https://github.com/Motiejus/django-webtopay',
-    install_requires=['Django>=1.3', 'M2crypto'],
+    install_requires=['Django>=1.3', 'pyopenssl'],
     description = 'A pluggable Django application for integrating WebToPay Payments',
     packages=find_packages(),
     classifiers=[

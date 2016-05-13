@@ -40,7 +40,7 @@ def makro(request):
     # get instance of WebToPayResponse
     try:
         resp_obj = form.save(commit=False)
-    except Exception, e:
+    except Exception as e:
         return _respond_error(request, "Exception while processing (%s)" % e)
 
     return _respond(resp_obj, request)

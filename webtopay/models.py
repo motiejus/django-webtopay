@@ -1,9 +1,15 @@
 # -*- coding: utf-8 -*-
 
+import django
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
 
 from webtopay.signals import payment_was_successful, payment_was_flagged
+
+if django.VERSION >= (1, 4):
+    ipfield = models.GenericIPAddressField
+else:
+    ipfield = models.IPAddressField
 
 class WebToPayResponse(models.Model):
     # Non-webtopay params
@@ -13,7 +19,7 @@ class WebToPayResponse(models.Model):
         return "%s %.2f" % (self.currency, amount)
 
     query = models.TextField(blank=True)
-    ipaddress = models.IPAddressField(blank=True)
+    ipaddress = ipfield(blank=True, null=True)
     flag = models.BooleanField(blank=True, default=False)
     flag_info = models.TextField(blank=True)
 
@@ -65,7 +71,7 @@ class WebToPayResponse(models.Model):
     surename = models.CharField(max_length=255, blank=True,
             help_text="Mokėtojo pavardė, gauta iš mokėjimo sistemos. "+\
                     "Siunčiamas tik jeigu mokėjimo sistema tokį suteikia")
-    status = models.IntegerField(max_length=255, help_text="Mokėjimo būklė: "+\
+    status = models.IntegerField(help_text="Mokėjimo būklė: "+\
                     "0 - apmokėjimas neįvyko, "+\
                     "1 - apmokėta sėkmingai, "+\
                     "2 - mokėjimo nurodymas priimtas, bet dar neįvykdytas",
